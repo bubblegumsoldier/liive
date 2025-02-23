@@ -7,7 +7,6 @@ import (
 	"github.com/liive/backend/liive-user-manager/internal/types"
 	"github.com/liive/backend/liive-user-manager/internal/service"
 	"github.com/liive/backend/shared/pkg/models"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/liive/backend/shared/pkg/auth"
 )
 
@@ -22,7 +21,7 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 }
 
 func getUserIDFromToken(c echo.Context) (uint, error) {
-	user := c.Get("user").(*jwt.Token)
+	user := c.Get("user").(auth.JWTToken)
 	claims := user.Claims.(*auth.Claims)
 	return claims.UserID, nil
 }

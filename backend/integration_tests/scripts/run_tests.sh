@@ -10,6 +10,7 @@ export POSTGRES_DATA_VOLUME="postgres_data_test"
 # Clean up any existing test environment
 echo "Cleaning up test environment..."
 docker compose down -v
+docker volume rm ${POSTGRES_DATA_VOLUME} || true
 
 # Start services with test volume
 echo "Starting services..."
@@ -31,6 +32,7 @@ TEST_EXIT_CODE=$?
 echo "Cleaning up..."
 cd ../..
 docker compose down -v
+docker volume rm ${POSTGRES_DATA_VOLUME} || true
 
 # Exit with the test exit code
 exit $TEST_EXIT_CODE 

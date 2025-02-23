@@ -60,32 +60,30 @@ func main() {
 
 	// JWT middleware
 	jwtMiddleware := middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
-		Claims: &auth.Claims{},
+		SigningKey:  []byte(os.Getenv("JWT_SECRET_KEY")),
+		Claims:      &auth.Claims{},
+		TokenLookup: "header:Authorization",
+		AuthScheme:  "Bearer",
 	})
 
 	// Swagger documentation
 	e.GET("/swagger", echoSwagger.EchoWrapHandler())
 	e.GET("/swagger/*", echoSwagger.EchoWrapHandler())
 
-	// Routes
+	// Public routes
 	e.POST("/register", userHandler.Register)
-	e.GET("/profile", userHandler.GetProfile, jwtMiddleware)
-	e.PUT("/profile", userHandler.UpdateProfile, jwtMiddleware)
-	e.POST("/change-password", userHandler.UpdatePassword, jwtMiddleware)
-
-	// Protected routes (will need auth middleware)
-	api := e.Group("/api")
-	// api.Use(middleware.JWT([]byte(os.Getenv("JWT_SECRET")))) // TODO: Implement proper auth middleware
-	api.PUT("/profile", userHandler.UpdateProfile)
-	api.PUT("/password", userHandler.UpdatePassword)
-
-	// Health check
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(200, map[string]string{
 			"status": "healthy",
 		})
 	})
+
+	// Protected routes
+	api := e.Group("")
+	api.Use(jwtMiddleware)
+	api.GET("/profile", userHandler.GetProfile)
+	api.PUT("/profile", userHandler.UpdateProfile)
+	api.POST("/change-password", userHandler.UpdatePassword)
 
 	// Start server
 	port := os.Getenv("PORT")

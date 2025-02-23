@@ -19,6 +19,9 @@ func getSecretKey() string {
     return key
 }
 
+// JWTToken is a wrapper around jwt.Token to avoid type conflicts
+type JWTToken = *jwt.Token
+
 type Claims struct {
     UserID    uint   `json:"user_id"`
     Email     string `json:"email"`

@@ -1,0 +1,19 @@
+[flake8]
+max-line-length = 100
+extend-ignore = E203
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    *.egg-info,
+    .venv,
+    .env
+per-file-ignores =
+    __init__.py: F401
+    tests/*: S101,S105,S106,S107
+# Explanation:
+# E203: Whitespace before ':' (black handles this)
+# F401: Module imported but unused (allowed in __init__.py)
+# S101: Use of assert detected (allowed in tests)
+# S105-S107: Possible hardcoded password (allowed in tests) 

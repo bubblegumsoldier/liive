@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -7,6 +7,7 @@ services:
       POSTGRES_USER: liive
       POSTGRES_PASSWORD: liive
       POSTGRES_DB: liivedb
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
@@ -18,114 +19,69 @@ services:
       retries: 5
       start_period: 10s
 
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-
   migrator:
     build:
       context: ./backend
-      dockerfile: liive-migrator/Dockerfile
+      args:
+        APP_NAME: liive-migrator
+    environment:
+      DATABASE_URL: postgresql://liive:liive@postgres:5432/liivedb
+      POSTGRES_DB: liivedb
     depends_on:
       postgres:
         condition: service_healthy
+
+  auth-api:
+    build:
+      context: ./backend
+      args:
+        APP_NAME: liive-auth-api
     environment:
-      - DB_HOST=postgres
-      - DB_USER=liive
-      - DB_PASSWORD=liive
-      - DB_NAME=liivedb
+      DATABASE_URL: postgresql://liive:liive@postgres:5432/liivedb
+      POSTGRES_DB: liivedb
+      PORT: 8000
+      HOST: 0.0.0.0
+      UVICORN_EXTRA_ARGS: "--reload --workers 1"
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
 
   ws-api:
     build:
       context: ./backend
-      dockerfile: liive-ws-api/Dockerfile
+      args:
+        APP_NAME: liive-ws-api
+    environment:
+      DATABASE_URL: postgresql://liive:liive@postgres:5432/liivedb
+      POSTGRES_DB: liivedb
+      PORT: 8003
+      HOST: 0.0.0.0
+      UVICORN_EXTRA_ARGS: "--reload --workers 1"
     ports:
-      - "8080:8080"
+      - "8003:8003"
     depends_on:
       migrator:
         condition: service_completed_successfully
-      redis:
-        condition: service_started
-    environment:
-      - DB_HOST=postgres
-      - DB_USER=liive
-      - DB_PASSWORD=liive
-      - DB_NAME=liivedb
-      - REDIS_HOST=redis
 
-  rest-api:
+  chat-api:
     build:
       context: ./backend
-      dockerfile: liive-rest-api/Dockerfile
+      args:
+        APP_NAME: liive-chat-api
+    environment:
+      DATABASE_URL: postgresql://liive:liive@postgres:5432/liivedb
+      POSTGRES_DB: liivedb
+      PORT: 8001
+      HOST: 0.0.0.0
+      UVICORN_EXTRA_ARGS: "--reload --workers 1"
     ports:
-      - "8081:8081"
+      - "8001:8001"
     depends_on:
       migrator:
         condition: service_completed_successfully
-      redis:
-        condition: service_started
-    environment:
-      - DB_HOST=postgres
-      - DB_USER=liive
-      - DB_PASSWORD=liive
-      - DB_NAME=liivedb
-      - REDIS_HOST=redis
-
-  message-storer:
-    build:
-      context: ./backend
-      dockerfile: liive-message-storer/Dockerfile
-    depends_on:
-      migrator:
-        condition: service_completed_successfully
-      redis:
-        condition: service_started
-    environment:
-      - DB_HOST=postgres
-      - DB_USER=liive
-      - DB_PASSWORD=liive
-      - DB_NAME=liivedb
-      - REDIS_HOST=redis
-
-  auth:
-    build:
-      context: ./backend
-      dockerfile: liive-auth/Dockerfile
-    ports:
-      - "8082:8082"
-    depends_on:
-      migrator:
-        condition: service_completed_successfully
-      redis:
-        condition: service_started
-    environment:
-      - DB_HOST=postgres
-      - DB_USER=liive
-      - DB_PASSWORD=liive
-      - DB_NAME=liivedb
-      - REDIS_HOST=redis
-      - JWT_SECRET_KEY=liive-jwt-secret-key-2024
-
-  user-manager:
-    build:
-      context: ./backend
-      dockerfile: liive-user-manager/Dockerfile
-    ports:
-      - "8083:8083"
-    depends_on:
-      migrator:
-        condition: service_completed_successfully
-      redis:
-        condition: service_started
-    environment:
-      - DB_HOST=postgres
-      - DB_USER=liive
-      - DB_PASSWORD=liive
-      - DB_NAME=liivedb
-      - REDIS_HOST=redis
-      - JWT_SECRET_KEY=liive-jwt-secret-key-2024
 
 volumes:
   postgres_data:
-  postgres_data_test: 
+  postgres_data_test:

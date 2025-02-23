@@ -13,7 +13,6 @@ import (
 	"github.com/liive/backend/shared/pkg/database"
 	"github.com/liive/backend/shared/pkg/auth"
 	echoSwagger "github.com/swaggo/echo-swagger"
-	"github.com/liive/backend/shared/pkg/types"
 )
 
 // @title User Manager API
@@ -62,9 +61,6 @@ func main() {
 	// JWT middleware
 	jwtMiddleware := middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
-		ContextKey: "user",
-		TokenLookup: "header:Authorization",
-		AuthScheme: "Bearer",
 		Claims: &auth.Claims{},
 	})
 

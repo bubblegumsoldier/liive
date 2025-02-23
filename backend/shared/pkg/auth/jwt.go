@@ -26,6 +26,24 @@ type Claims struct {
     jwt.RegisteredClaims
 }
 
+// Valid implements the jwt.Claims interface
+func (c *Claims) Valid() error {
+    if c.UserID == 0 {
+        return fmt.Errorf("missing user ID")
+    }
+    if c.Email == "" {
+        return fmt.Errorf("missing email")
+    }
+    now := time.Now()
+    if !c.ExpiresAt.IsZero() && now.After(c.ExpiresAt.Time) {
+        return fmt.Errorf("token has expired")
+    }
+    if !c.NotBefore.IsZero() && now.Before(c.NotBefore.Time) {
+        return fmt.Errorf("token is not valid yet")
+    }
+    return nil
+}
+
 func GenerateToken(user *models.User) (string, error) {
     // Create roles slice
     roles := make([]string, len(user.Roles))

@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: liive
+      POSTGRES_PASSWORD: liive
+      POSTGRES_DB: liivedb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  ws-api:
+    build:
+      context: ./backend
+      dockerfile: liive-ws-api/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=liive
+      - DB_PASSWORD=liive
+      - DB_NAME=liivedb
+      - REDIS_HOST=redis
+
+  rest-api:
+    build:
+      context: ./backend
+      dockerfile: liive-rest-api/Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=liive
+      - DB_PASSWORD=liive
+      - DB_NAME=liivedb
+      - REDIS_HOST=redis
+
+  message-storer:
+    build:
+      context: ./backend
+      dockerfile: liive-message-storer/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=liive
+      - DB_PASSWORD=liive
+      - DB_NAME=liivedb
+      - REDIS_HOST=redis
+
+  auth:
+    build:
+      context: ./backend
+      dockerfile: liive-auth/Dockerfile
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=liive
+      - DB_PASSWORD=liive
+      - DB_NAME=liivedb
+      - REDIS_HOST=redis
+
+  user-manager:
+    build:
+      context: ./backend
+      dockerfile: liive-user-manager/Dockerfile
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=liive
+      - DB_PASSWORD=liive
+      - DB_NAME=liivedb
+      - REDIS_HOST=redis
+
+volumes:
+  postgres_data: 

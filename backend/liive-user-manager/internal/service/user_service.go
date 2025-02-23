@@ -121,4 +121,15 @@ func (s *UserService) UpdatePassword(ctx context.Context, userID uint, req types
 	}
 
 	return nil
+}
+
+func (s *UserService) GetProfile(ctx context.Context, userID uint) (*models.User, error) {
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
 } 

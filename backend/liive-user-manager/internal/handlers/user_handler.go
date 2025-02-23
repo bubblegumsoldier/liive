@@ -7,6 +7,8 @@ import (
 	"github.com/liive/backend/liive-user-manager/internal/types"
 	"github.com/liive/backend/liive-user-manager/internal/service"
 	"github.com/liive/backend/shared/pkg/models"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/liive/backend/shared/pkg/auth"
 )
 
 type UserHandler struct {
@@ -17,6 +19,12 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}
+}
+
+func getUserIDFromToken(c echo.Context) (uint, error) {
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(*auth.Claims)
+	return claims.UserID, nil
 }
 
 // Register godoc
@@ -72,7 +80,11 @@ func (h *UserHandler) Register(c echo.Context) error {
 // @Failure 500 {object} types.ErrorResponse
 // @Router /api/profile [put]
 func (h *UserHandler) UpdateProfile(c echo.Context) error {
-	userID := c.Get("user_id").(uint) // Set by auth middleware
+	userID, err := getUserIDFromToken(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "Invalid token"})
+	}
+
 	var req types.UpdateProfileRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid request format"})
@@ -112,7 +124,11 @@ func (h *UserHandler) UpdateProfile(c echo.Context) error {
 // @Failure 500 {object} types.ErrorResponse
 // @Router /api/password [put]
 func (h *UserHandler) UpdatePassword(c echo.Context) error {
-	userID := c.Get("user_id").(uint) // Set by auth middleware
+	userID, err := getUserIDFromToken(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "Invalid token"})
+	}
+
 	var req types.UpdatePasswordRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid request format"})
@@ -134,6 +150,37 @@ func (h *UserHandler) UpdatePassword(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+// GetProfile godoc
+// @Summary Get user profile
+// @Description Get user profile information
+// @Tags users
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} types.UserResponse
+// @Failure 401 {object} types.ErrorResponse
+// @Failure 404 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /profile [get]
+func (h *UserHandler) GetProfile(c echo.Context) error {
+	userID, err := getUserIDFromToken(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "Invalid token"})
+	}
+
+	user, err := h.userService.GetProfile(c.Request().Context(), userID)
+	if err != nil {
+		switch err {
+		case service.ErrUserNotFound:
+			return c.JSON(http.StatusNotFound, types.ErrorResponse{Error: "User not found"})
+		default:
+			return c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: "Failed to get profile"})
+		}
+	}
+
+	return c.JSON(http.StatusOK, toUserResponse(user))
 }
 
 func toUserResponse(user *models.User) types.UserResponse {

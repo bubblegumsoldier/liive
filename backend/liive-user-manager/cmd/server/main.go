@@ -11,7 +11,9 @@ import (
 	"github.com/liive/backend/liive-user-manager/internal/handlers"
 	"github.com/liive/backend/liive-user-manager/internal/service"
 	"github.com/liive/backend/shared/pkg/database"
+	"github.com/liive/backend/shared/pkg/auth"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	"github.com/liive/backend/shared/pkg/types"
 )
 
 // @title User Manager API
@@ -57,13 +59,25 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
+	// JWT middleware
+	jwtMiddleware := middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey: []byte(os.Getenv("JWT_SECRET_KEY")),
+		ContextKey: "user",
+		TokenLookup: "header:Authorization",
+		AuthScheme: "Bearer",
+		Claims: &auth.Claims{},
+	})
+
 	// Swagger documentation
 	e.GET("/swagger", echoSwagger.EchoWrapHandler())
 	e.GET("/swagger/*", echoSwagger.EchoWrapHandler())
 
 	// Routes
 	e.POST("/register", userHandler.Register)
-	
+	e.GET("/profile", userHandler.GetProfile, jwtMiddleware)
+	e.PUT("/profile", userHandler.UpdateProfile, jwtMiddleware)
+	e.POST("/change-password", userHandler.UpdatePassword, jwtMiddleware)
+
 	// Protected routes (will need auth middleware)
 	api := e.Group("/api")
 	// api.Use(middleware.JWT([]byte(os.Getenv("JWT_SECRET")))) // TODO: Implement proper auth middleware

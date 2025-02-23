@@ -4,10 +4,10 @@ import (
     "fmt"
     "log"
     "os"
+    "time"
 
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
-    "github.com/liive/backend/shared/pkg/models"
 )
 
 var DB *gorm.DB
@@ -21,15 +21,20 @@ func InitDB() (*gorm.DB, error) {
     dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=5432 sslmode=disable TimeZone=UTC",
         host, user, password, dbname)
     
-    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-    if err != nil {
-        return nil, fmt.Errorf("failed to connect to database: %v", err)
+    // Retry connection a few times
+    var db *gorm.DB
+    var err error
+    maxRetries := 5
+    for i := 0; i < maxRetries; i++ {
+        db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+        if err == nil {
+            break
+        }
+        log.Printf("Failed to connect to database (attempt %d/%d): %v", i+1, maxRetries, err)
+        time.Sleep(time.Second * 3)
     }
-
-    // Auto Migrate the schema
-    err = db.AutoMigrate(&models.User{}, &models.Role{})
     if err != nil {
-        return nil, fmt.Errorf("failed to migrate database: %v", err)
+        return nil, fmt.Errorf("failed to connect to database after %d attempts: %v", maxRetries, err)
     }
 
     DB = db

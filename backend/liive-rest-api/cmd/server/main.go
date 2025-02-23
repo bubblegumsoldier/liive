@@ -1,14 +1,17 @@
 package main
 
 import (
-    "log"
-    "os"
+	"log"
+	"os"
 
-    "github.com/labstack/echo/v4"
-    "github.com/labstack/echo/v4/middleware"
-    _ "github.com/liive/backend/liive-rest-api/docs" // Import generated Swagger docs
-    "github.com/liive/backend/shared/pkg/database"
-    echoSwagger "github.com/swaggo/echo-swagger"
+	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	_ "github.com/liive/backend/liive-rest-api/docs" // Import generated Swagger docs
+	"github.com/liive/backend/liive-rest-api/internal/handlers"
+	"github.com/liive/backend/liive-rest-api/internal/service"
+	"github.com/liive/backend/shared/pkg/database"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 // @title REST API
@@ -26,36 +29,65 @@ import (
 // @host localhost:8081
 // @BasePath /
 // @schemes http
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	return cv.validator.Struct(i)
+}
+
 func main() {
-    // Initialize database
-    _, err := database.InitDB()
-    if err != nil {
-        log.Fatalf("Failed to initialize database: %v", err)
-    }
+	// Initialize database
+	db, err := database.InitDB()
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 
-    // Create Echo instance
-    e := echo.New()
+	// Initialize services
+	chatService := service.NewChatService(db)
 
-    // Middleware
-    e.Use(middleware.Logger())
-    e.Use(middleware.Recover())
-    e.Use(middleware.CORS())
+	// Initialize handlers
+	chatHandler := handlers.NewChatHandler(chatService)
 
-    // Swagger documentation
-    e.GET("/swagger", echoSwagger.EchoWrapHandler())
-    e.GET("/swagger/*", echoSwagger.EchoWrapHandler())
+	// Create Echo instance
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
 
-    // Routes
-    e.GET("/health", func(c echo.Context) error {
-        return c.JSON(200, map[string]string{
-            "status": "healthy",
-        })
-    })
+	// Middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
 
-    // Start server
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "8081"
-    }
-    e.Logger.Fatal(e.Start(":" + port))
+	// Swagger documentation
+	e.GET("/swagger", echoSwagger.EchoWrapHandler())
+	e.GET("/swagger/*", echoSwagger.EchoWrapHandler())
+
+	// Chat routes
+	api := e.Group("/api")
+	// TODO: Add JWT middleware
+	// api.Use(middleware.JWT([]byte(os.Getenv("JWT_SECRET"))))
+
+	chats := api.Group("/chats")
+	chats.POST("", chatHandler.CreateChat)
+	chats.GET("", chatHandler.GetUserChats)
+	chats.GET("/:id", chatHandler.GetChat)
+	chats.PUT("/:id", chatHandler.UpdateChatTitle)
+	chats.POST("/:id/leave", chatHandler.LeaveChat)
+	chats.POST("/:id/members", chatHandler.AddMembers)
+	chats.DELETE("/:id/members/:userId", chatHandler.RemoveMember)
+
+	// Health check
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(200, map[string]string{
+			"status": "healthy",
+		})
+	})
+
+	// Start server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8081"
+	}
+	e.Logger.Fatal(e.Start(":" + port))
 }

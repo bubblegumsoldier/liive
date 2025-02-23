@@ -1,0 +1,20 @@
+[project]
+name = "liive-migrator"
+version = "0.1.0"
+description = "Database migration service for Liive"
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.13.1",
+    "psycopg2-binary>=2.9.9",
+    "liive-sql-models>=0.1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/liive_migrator"] 

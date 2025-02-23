@@ -1,0 +1,22 @@
+[project]
+name = "liive-common-api"
+version = "0.1.0"
+description = "Common API utilities and endpoints for Liive services"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.109.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "sqlalchemy[mypy]>=2.0.25",
+    "liive-sql-models>=0.1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/liive_common_api"] 

@@ -1,0 +1,23 @@
+[project]
+name = "liive-ws-api"
+version = "0.1.0"
+description = "WebSocket API service for Liive"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "websockets>=12.0",
+    "sqlalchemy[mypy]>=2.0.25",
+    "liive-sql-models>=0.1.0",
+    "liive-common-api>=0.1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/liive_ws_api"] 

@@ -1,0 +1,22 @@
+[project]
+name = "liive-sql-models"
+version = "0.1.0"
+description = "Shared SQLAlchemy models for Liive"
+requires-python = ">=3.11"
+dependencies = [
+    "sqlalchemy>=2.0.25",
+    "alembic>=1.13.1",
+    "psycopg2-binary>=2.9.9",
+    "types-psycopg2>=2.9.21.20",
+    "sqlalchemy[mypy]>=2.0.25",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.setuptools]
+py-typed = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/liive_sql_models"] 
